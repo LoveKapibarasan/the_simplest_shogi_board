@@ -23,8 +23,6 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 100%;
-      max-width: 540px;
     }
 
     .hand {
@@ -46,10 +44,10 @@
       grid-template-columns: repeat(9, 1fr);
       grid-template-rows: repeat(9, 1fr);
       aspect-ratio: 1;
-      width: 90vw;
-      max-width: 540px;
       border: 2px solid #333;
     }
+
+
 
     .cell {
       border: 1px solid #888;
@@ -64,9 +62,11 @@
       cursor: pointer;
     }
 
-    .selected {
-      outline: 2px solid red;
-    }
+.selected {
+  outline: 2px solid red !important;
+  background: yellow !important; /* 一時的に目立たせる */
+}
+
   </style>
 </head>
 <body>
@@ -200,16 +200,22 @@ let flippedBoard = boardPart
     }
 
 function onPieceClick(piece) {
+  console.log('Piece clicked at onPieceClick:', piece);
+  console.log('Selected piece at onPieceClick:', selectedPiece);
   // If nothing is selected, select it
   if (!selectedPiece) {
     selectedPiece = piece;
     selectedPiece.classList.add('selected');
+    console.log('After updated, selected piece:', selectedPiece);
   }
 }
 
 
 function onCellClick(cell) {
-  if (!selectedPiece) return;
+  if (!selectedPiece) {
+    console.warn('No piece selected');
+    return;
+  }
   const data = selectedPiece.dataset;
 
   const target = cell.firstChild;
