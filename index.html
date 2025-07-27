@@ -48,23 +48,26 @@
     }
 
 
+  .cell {
+    border: 1px solid #888;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: calc(3vw + 10px);
+    user-select: none;
+    height: calc(3vw + 10px);
+  }
 
-    .cell {
-      border: 1px solid #888;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: calc(3vw + 10px);
-      user-select: none;
-    }
-
-    .piece {
-      cursor: pointer;
-    }
-
+  .piece {
+    cursor: pointer;
+    height: 80%;
+    font-size: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
 .selected {
   outline: 2px solid red !important;
-  background: yellow !important; /* 一時的に目立たせる */
 }
 
   </style>
@@ -195,46 +198,71 @@ let flippedBoard = boardPart
 
       piece.style.transform = color === 'w' ? 'rotate(180deg)' : '';
 
-      piece.onclick = () => onPieceClick(piece);
+     piece.addEventListener('click', (e) => {
+        e.stopPropagation(); // prevent deselect from bubbling
+        onPieceClick(piece);
+    });
+
       return piece;
     }
 
 function onPieceClick(piece) {
-  console.log('Piece clicked at onPieceClick:', piece);
-  console.log('Selected piece at onPieceClick:', selectedPiece);
-  // If nothing is selected, select it
-  if (!selectedPiece) {
-    selectedPiece = piece;
-    selectedPiece.classList.add('selected');
-    console.log('After updated, selected piece:', selectedPiece);
+  if (selectedPiece === piece) {
+    piece.classList.remove('selected');
+    selectedPiece = null;
+    return;
   }
+
+if (selectedPiece && selectedPiece !== piece) {
+  const from = selectedPiece;
+  const to = piece;
+
+
+    const cell = to.closest('.cell'); // safe access to board cell
+
+    if (cell) {
+      const baseCode = to.dataset.code;
+      const hand = document.getElementById(from.dataset.color === 'b' ? 'hand-black' : 'hand-white');
+      const captured = createPiece(baseCode, from.dataset.color, false);
+      hand.appendChild(captured);
+
+      const row = parseInt(cell.id.split('-')[1]);
+      const promotable = ['P', 'L', 'N', 'S', 'B', 'R'].includes(from.dataset.code);
+      const inZone = (from.dataset.color === 'b' && row <= 2) || (from.dataset.color === 'w' && row >= 6);
+      let promote = false;
+
+      if (promotable && inZone && from.dataset.promoted !== 'true') {
+        promote = confirm('Promote this piece?');
+      }
+
+      const newPiece = createPiece(from.dataset.code, from.dataset.color, promote || from.dataset.promoted === 'true');
+      cell.innerHTML = '';
+      cell.appendChild(newPiece);
+
+      from.remove();
+      selectedPiece = null;
+
+      playMoveSound();
+      currentSFEN = getSFEN();
+      return;
+    }
 }
+
+
+  
+
+  selectedPiece = piece;
+  selectedPiece.classList.add('selected');
+}
+
 
 
 function onCellClick(cell) {
   if (!selectedPiece) {
-    console.warn('No piece selected');
     return;
   }
   const data = selectedPiece.dataset;
 
-  const target = cell.firstChild;
-
-  // Handle capture
-  if (target) {
-    if (target.dataset.color === data.color) {
-      // Same side → switch selection
-      onPieceClick(target);
-      selectedPiece.classList.remove('selected');
-      return;
-    } else {
-      // Opponent → capture and send to hand
-      const baseCode = target.dataset.code;
-      const hand = document.getElementById(data.color === 'b' ? 'hand-black' : 'hand-white');
-      const captured = createPiece(baseCode, data.color, false);
-      hand.appendChild(captured);
-    }
-  }
 
   // Promotion logic
   const row = parseInt(cell.id.split('-')[1]);
